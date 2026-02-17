@@ -137,7 +137,8 @@ runs:
           PR_DESCRIPTION="Automatically generated documentation update based on source repository changes."
         fi
 
-        BRANCH="codex-doc-update-${GITHUB_RUN_ID}"
+        RANDOM_ID=$(date +%s)$RANDOM
+        BRANCH="codex-doc-update-${RANDOM_ID}"
         git checkout -b $BRANCH
         git add .
         git commit -m "$PR_TITLE"
