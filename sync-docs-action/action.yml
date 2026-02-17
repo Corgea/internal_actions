@@ -74,10 +74,9 @@ runs:
       with:
         openai-api-key: ${{ inputs.openai_api_key }}
         working-directory: .
-        codex-args: >
-          exec "
+        prompt: |
           You maintain our documentation repository.
-
+    
           CONTEXT:
           - Source repository is located at ./source
           - Diff file is located at ./source/diff.txt
@@ -85,13 +84,13 @@ runs:
           - We use Mintlify
           - Inspect mint.json to determine active documentation files
           - This is client-facing docs; it shouldn't include internal code snippets or describe internal algorithms
-
+    
           YOUR TASK:
           1. Inspect ./source/diff.txt
           2. Inspect relevant parts of ./source/ if needed
           3. Inspect existing documentation located at ./docs
           4. Update, add, or remove ONLY documentation related to the diff
-
+    
           RULES:
           - DO NOT update changelogs
           - For API changes only modify OpenAPI reference docs
@@ -100,7 +99,6 @@ runs:
           - Make minimal targeted edits
           - Only modify files referenced in mint.json
           - If no documentation updates are required, make NO changes
-          "
         sandbox: workspace-write
 
     ##########################################################################
