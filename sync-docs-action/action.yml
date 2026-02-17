@@ -1,0 +1,134 @@
+name: "AI Docs Sync (Codex Full Auto)"
+description: "Autonomously updates documentation repo based on source repo diff"
+
+inputs:
+  base_sha:
+    description: "Base commit SHA"
+    required: true
+  head_sha:
+    description: "Head commit SHA"
+    required: true
+  openai_api_key:
+    description: "OpenAI API Key"
+    required: true
+  docs_repo_token:
+    description: "Token with write access to docs repo"
+    required: true
+  docs_repo:
+    description: "Docs repo in owner/name format (e.g. Corgea/docs)"
+    default: "Corgea/docs"
+    required: false
+  docs_base_branch:
+    description: "Base branch in docs repo"
+    required: false
+    default: "main"
+
+runs:
+  using: "composite"
+  steps:
+
+    ##########################################################################
+    # 1️⃣ Checkout SOURCE repo into /source
+    ##########################################################################
+    - name: Checkout source repository
+      uses: actions/checkout@v4
+      with:
+        path: source
+
+    ##########################################################################
+    # 2️⃣ Generate diff file
+    ##########################################################################
+    - name: Generate diff
+      shell: bash
+      run: |
+        cd source
+        git fetch origin ${{ inputs.base_sha }}
+        git fetch origin ${{ inputs.head_sha }}
+        git diff ${{ inputs.base_sha }} ${{ inputs.head_sha }} > ../diff.txt
+
+    ##########################################################################
+    # 3️⃣ Clone docs repo into /docs
+    ##########################################################################
+    - name: Clone docs repository
+      shell: bash
+      run: |
+        git clone https://x-access-token:${{ inputs.docs_repo_token }}@github.com/${{ inputs.docs_repo }} docs
+        cd docs
+        git config user.name "docs-bot"
+        git config user.email "docs-bot@users.noreply.github.com"
+
+    ##########################################################################
+    # 4️⃣ Install Codex CLI (if not preinstalled)
+    ##########################################################################
+    - name: Install Codex CLI
+      shell: bash
+      run: |
+        pip install --upgrade openai-codex
+
+    ##########################################################################
+    # 5️⃣ Run Codex in FULL AUTO mode
+    ##########################################################################
+    - name: Run Codex (full-auto)
+      shell: bash
+      env:
+        OPENAI_API_KEY: ${{ inputs.openai_api_key }}
+      run: |
+
+        codex exec "
+        You maintain this documentation repository.
+
+        CONTEXT:
+        - Source repository is located at ./source
+        - Diff file is located at ./source/diff.txt
+        - Docs repository is located at ./docs
+        - We use Mintlify
+        - Inspect mint.json to determine active documentation files
+
+        YOUR TASK:
+        1. Inspect ./source/diff.txt
+        2. Inspect relevant parts of ./source/ if needed
+        3. Inspect existing documentation located at ./docs
+        4. Update, add, or remove ONLY documentation related to the diff
+
+        RULES:
+        - DO NOT update changelogs
+        - For api changes only modify OpenAPI reference docs
+        - DO NOT refactor unrelated outdated sections
+        - DO NOT perform large rewrites
+        - Make minimal targeted edits
+        - Only modify files referenced in mint.json
+        - If no documentation updates are required, make NO changes
+        " \
+        --skip-git-repo-check \
+        --full-auto
+
+    ##########################################################################
+    # 6️⃣ Create PR only if changes exist
+    ##########################################################################
+    - name: Create Pull Request if docs changed
+      shell: bash
+      run: |
+        cd docs
+
+        if [[ -z $(git status --porcelain) ]]; then
+          echo "No documentation changes detected."
+          exit 0
+        fi
+
+        BRANCH="codex-doc-update-${GITHUB_RUN_ID}"
+
+        git checkout -b $BRANCH
+        git add .
+        git commit -m "AI documentation update based on source changes"
+        git push origin $BRANCH
+
+        curl -s -X POST \
+          -H "Authorization: token ${{ inputs.docs_repo_token }}" \
+          -H "Accept: application/vnd.github+json" \
+          https://api.github.com/repos/${{ inputs.docs_repo }}/pulls \
+          -d '{
+            "title": "AI Documentation Update",
+            "head": "'"$BRANCH"'",
+            "base": "${{ inputs.docs_base_branch }}",
+            "body": "Automatically generated documentation update based on source repository changes."
+          }'
