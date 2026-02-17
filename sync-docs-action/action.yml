@@ -44,8 +44,16 @@ runs:
         cd source
         git fetch origin ${{ inputs.base_sha }}
         git fetch origin ${{ inputs.head_sha }}
-        git diff ${{ inputs.base_sha }} ${{ inputs.head_sha }} > ../diff.txt
-
+        git diff ${{ inputs.base_sha }} ${{ inputs.head_sha }} > ./diff.txt
+        cd ..
+        
+    - name: Print diff
+      shell: bash
+      run: |
+        echo "===== Generated Diff ====="
+        cat ./source/diff.txt
+        echo "=========================="
+        
     ##########################################################################
     # 3️⃣ Clone docs repo into /docs
     ##########################################################################
@@ -68,18 +76,18 @@ runs:
         working-directory: .
         codex-args: >
           exec "
-          You maintain this documentation repository.
+          You maintain our documentation repository.
 
           CONTEXT:
           - Source repository is located at ./source
-          - Diff file is located at ./diff.txt
+          - Diff file is located at ./source/diff.txt
           - Docs repository is located at ./docs
           - We use Mintlify
           - Inspect mint.json to determine active documentation files
           - This is client-facing docs; it shouldn't include internal code snippets or describe internal algorithms
 
           YOUR TASK:
-          1. Inspect ./diff.txt
+          1. Inspect ./source/diff.txt
           2. Inspect relevant parts of ./source/ if needed
           3. Inspect existing documentation located at ./docs
           4. Update, add, or remove ONLY documentation related to the diff
