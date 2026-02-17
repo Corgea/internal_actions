@@ -83,6 +83,7 @@ runs:
         - Docs repository is located at ./docs
         - We use Mintlify
         - Inspect mint.json to determine active documentation files
+        - This is a client facing docs shouldn't it shouldn't include any internal code snippets or describe internal algorithms
 
         YOUR TASK:
         1. Inspect ./source/diff.txt
