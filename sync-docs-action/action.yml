@@ -58,12 +58,12 @@ runs:
         git config user.email "docs-bot@users.noreply.github.com"
 
     ##########################################################################
-    # 4️⃣ Install Codex CLI (if not preinstalled)
+    # 4️⃣ Install Codex CLI (npm package)
     ##########################################################################
     - name: Install Codex CLI
       shell: bash
       run: |
-        pip install --upgrade openai-codex
+        npm install -g @openai/codex
 
     ##########################################################################
     # 5️⃣ Run Codex in FULL AUTO mode
@@ -73,7 +73,6 @@ runs:
       env:
         OPENAI_API_KEY: ${{ inputs.openai_api_key }}
       run: |
-
         codex exec "
         You maintain this documentation repository.
 
@@ -83,7 +82,7 @@ runs:
         - Docs repository is located at ./docs
         - We use Mintlify
         - Inspect mint.json to determine active documentation files
-        - This is a client facing docs shouldn't it shouldn't include any internal code snippets or describe internal algorithms
+        - This is client facing docs; it shouldn't include internal code snippets or describe internal algorithms
 
         YOUR TASK:
         1. Inspect ./source/diff.txt
@@ -93,7 +92,7 @@ runs:
 
         RULES:
         - DO NOT update changelogs
-        - For api changes only modify OpenAPI reference docs
+        - For API changes only modify OpenAPI reference docs
         - DO NOT refactor unrelated outdated sections
         - DO NOT perform large rewrites
         - Make minimal targeted edits
