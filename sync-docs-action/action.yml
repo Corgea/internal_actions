@@ -31,7 +31,7 @@ runs:
     # 1️⃣ Checkout SOURCE repo into /source
     ##########################################################################
     - name: Checkout source repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         path: source
 
@@ -58,65 +58,56 @@ runs:
         git config user.email "docs-bot@users.noreply.github.com"
 
     ##########################################################################
-    # 4️⃣ Install Codex CLI (npm package)
-    ##########################################################################
-    - name: Install Codex CLI
-      shell: bash
-      run: |
-        npm install -g @openai/codex
-
-    ##########################################################################
-    # 5️⃣ Run Codex in FULL AUTO mode
+    # 4️⃣ Run Codex using official GitHub Action
     ##########################################################################
     - name: Run Codex (full-auto)
-      shell: bash
-      env:
-        OPENAI_API_KEY: ${{ inputs.openai_api_key }}
-      run: |
-        codex exec "
-        You maintain this documentation repository.
+      id: run_codex
+      uses: openai/codex-action@v1
+      with:
+        openai-api-key: ${{ inputs.openai_api_key }}
+        working-directory: .
+        codex-args: >
+          exec "
+          You maintain this documentation repository.
 
-        CONTEXT:
-        - Source repository is located at ./source
-        - Diff file is located at ./source/diff.txt
-        - Docs repository is located at ./docs
-        - We use Mintlify
-        - Inspect mint.json to determine active documentation files
-        - This is client facing docs; it shouldn't include internal code snippets or describe internal algorithms
+          CONTEXT:
+          - Source repository is located at ./source
+          - Diff file is located at ./diff.txt
+          - Docs repository is located at ./docs
+          - We use Mintlify
+          - Inspect mint.json to determine active documentation files
+          - This is client-facing docs; it shouldn't include internal code snippets or describe internal algorithms
 
-        YOUR TASK:
-        1. Inspect ./source/diff.txt
-        2. Inspect relevant parts of ./source/ if needed
-        3. Inspect existing documentation located at ./docs
-        4. Update, add, or remove ONLY documentation related to the diff
+          YOUR TASK:
+          1. Inspect ./diff.txt
+          2. Inspect relevant parts of ./source/ if needed
+          3. Inspect existing documentation located at ./docs
+          4. Update, add, or remove ONLY documentation related to the diff
 
-        RULES:
-        - DO NOT update changelogs
-        - For API changes only modify OpenAPI reference docs
-        - DO NOT refactor unrelated outdated sections
-        - DO NOT perform large rewrites
-        - Make minimal targeted edits
-        - Only modify files referenced in mint.json
-        - If no documentation updates are required, make NO changes
-        " \
-        --skip-git-repo-check \
-        --full-auto
+          RULES:
+          - DO NOT update changelogs
+          - For API changes only modify OpenAPI reference docs
+          - DO NOT refactor unrelated outdated sections
+          - DO NOT perform large rewrites
+          - Make minimal targeted edits
+          - Only modify files referenced in mint.json
+          - If no documentation updates are required, make NO changes
+          "
+        sandbox: workspace-write
 
     ##########################################################################
-    # 6️⃣ Create PR only if changes exist
+    # 5️⃣ Create PR only if changes exist
     ##########################################################################
     - name: Create Pull Request if docs changed
       shell: bash
       run: |
         cd docs
-
         if [[ -z $(git status --porcelain) ]]; then
           echo "No documentation changes detected."
           exit 0
         fi
 
         BRANCH="codex-doc-update-${GITHUB_RUN_ID}"
-
         git checkout -b $BRANCH
         git add .
         git commit -m "AI documentation update based on source changes"
