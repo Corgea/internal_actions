@@ -22,6 +22,9 @@ inputs:
     description: "Base branch in docs repo"
     required: false
     default: "main"
+  pr_info:
+    description: "Optional PR description or comment message to provide additional context"
+    required: false
 
 runs:
   using: "composite"
@@ -100,6 +103,7 @@ runs:
           - Make minimal targeted edits
           - Only modify files referenced in mint.json
           - If no documentation updates are required, make NO changes and DO NOT create pr.json
+          - Understand the change being made before updating the docs, if we're making a change to the MCP server the docs for the MCP server should be updated, if we're making changes to the github integrations then we start inspecting the github integrations docs not randomly look at files and updating them.
           
           PR JSON FORMAT:
           Create ./pr.json with this structure:
@@ -107,6 +111,8 @@ runs:
             "title": "Brief PR title describing the doc changes",
             "description": "1-3 sentence summary of what was updated in the docs and why"
           }
+          ${{ inputs.pr_info && format('
+          PR Desc/ Comment message: {0}', inputs.pr_info) || '' }}
         sandbox: workspace-write
 
     ##########################################################################
