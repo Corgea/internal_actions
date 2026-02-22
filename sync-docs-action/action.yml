@@ -103,6 +103,8 @@ runs:
           - Make minimal targeted edits
           - Only modify files referenced in mint.json
           - If no documentation updates are required, make NO changes and DO NOT create pr.json
+          - If PR description is included and it hints that you shouldn't update the docs or a docs update is not needed then skip it, for example **Requires Documentation Update:**  - [ ] Yes - [x] No
+          - PR description could indicate or provide more information on how or what to update in the docs so watch for these 
           - Understand the change being made before updating the docs, if we're making a change to the MCP server the docs for the MCP server should be updated, if we're making changes to the github integrations then we start inspecting the github integrations docs not randomly look at files and updating them.
           
           PR JSON FORMAT:
